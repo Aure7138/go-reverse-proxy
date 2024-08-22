@@ -64,6 +64,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
+		req.Host = targetURL.Host
 
 		mutex.Lock()
 		req.Header.Set("Authorization", apiKeys[apiKeyIndex])
