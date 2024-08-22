@@ -67,7 +67,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
 		req.Host = targetURL.Host
 
 		mutex.Lock()
-		req.Header.Set("Authorization", apiKeys[apiKeyIndex])
+		// req.Header.Set("Authorization", apiKeys[apiKeyIndex])
 		apiKeyIndex = (apiKeyIndex + 1) % len(apiKeys)
 		mutex.Unlock()
 
