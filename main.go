@@ -158,11 +158,11 @@ func proxyHandler(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
 		return nil
 	}
 
-	httpProxy := "http://127.0.0.1:7890"
-	proxyURL, _ := url.Parse(httpProxy)
-	proxy.Transport = &http.Transport{
-		Proxy: http.ProxyURL(proxyURL),
-	}
+	// httpProxy := "http://127.0.0.1:7890"
+	// proxyURL, _ := url.Parse(httpProxy)
+	// proxy.Transport = &http.Transport{
+	// 	Proxy: http.ProxyURL(proxyURL),
+	// }
 
 	for i := 0; i < maxRetries; i++ {
 		proxyReq := r.Clone(r.Context())
