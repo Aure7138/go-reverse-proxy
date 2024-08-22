@@ -53,6 +53,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
 		return
 	}
 	r.Body.Close()
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	fmt.Fprintf(logWriter, "\n")
 	mutex.Unlock()
 
@@ -113,6 +114,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
 		if resp.Body != nil {
 			bodyBytes, _ = io.ReadAll(resp.Body)
 			resp.Body.Close()
+			resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
 		modifiedBodyBytes := make([]byte, len(bodyBytes))
 		copy(modifiedBodyBytes, bodyBytes)
