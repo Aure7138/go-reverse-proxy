@@ -2,14 +2,12 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -72,21 +70,6 @@ func proxyHandler(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
 		apiKeyIndex = (apiKeyIndex + 1) % len(apiKeys)
 		mutex.Unlock()
 
-		if req.Body != nil {
-			bodyBytes, _ := io.ReadAll(req.Body)
-			req.Body.Close()
-			var bodyMap map[string]interface{}
-			if err := json.Unmarshal(bodyBytes, &bodyMap); err == nil {
-				if stream, ok := bodyMap["stream"].(bool); ok && stream {
-					// bodyMap["stream"] = false
-				}
-				bodyBytes, _ = json.Marshal(bodyMap)
-			}
-			req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-			req.ContentLength = int64(len(bodyBytes))
-			req.Header.Set("Content-Length", strconv.Itoa(len(bodyBytes)))
-		}
-
 		mutex.Lock()
 		fmt.Fprintf(logWriter, "Request index: #%d:\n", currentRequest)
 		fmt.Fprintf(logWriter, "Going through Director\n")
@@ -110,32 +93,6 @@ func proxyHandler(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
 	}
 
 	proxy.ModifyResponse = func(resp *http.Response) error {
-		var bodyBytes []byte
-		if resp.Body != nil {
-			bodyBytes, _ = io.ReadAll(resp.Body)
-			resp.Body.Close()
-			resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-		}
-		modifiedBodyBytes := make([]byte, len(bodyBytes))
-		copy(modifiedBodyBytes, bodyBytes)
-		var responseMap map[string]interface{}
-		if err := json.Unmarshal(bodyBytes, &responseMap); err == nil {
-			if choices, ok := responseMap["choices"].([]interface{}); ok {
-				for _, choice := range choices {
-					if choiceMap, ok := choice.(map[string]interface{}); ok {
-						// delete(choiceMap, "finish_reason")
-						if finishReason, ok := choiceMap["finish_reason"].(string); ok && finishReason == "stop" {
-							// choiceMap["finish_reason"] = "null"
-						}
-					}
-				}
-			}
-			modifiedBodyBytes, _ = json.Marshal(responseMap)
-			resp.Body = io.NopCloser(bytes.NewBuffer(modifiedBodyBytes))
-			resp.ContentLength = int64(len(modifiedBodyBytes))
-			resp.Header.Set("Content-Length", strconv.Itoa(len(modifiedBodyBytes)))
-		}
-
 		mutex.Lock()
 		fmt.Fprintf(logWriter, "Response index: #%d:\n", currentRequest)
 		fmt.Fprintf(logWriter, "Going through ModifyResponse\n")
@@ -160,8 +117,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request, targetURL *url.URL) {
 		return nil
 	}
 
-	// httpProxy := "http://127.0.0.1:7890"
-	// proxyURL, _ := url.Parse(httpProxy)
+	// proxyURL, _ := url.Parse("http://127.0.0.1:7890")
 	// proxy.Transport = &http.Transport{
 	// 	Proxy: http.ProxyURL(proxyURL),
 	// }
